@@ -19,6 +19,7 @@ export function SetupView({ options, onState, isAdmin }) {
   const [teamsSaving, setTeamsSaving] = useState(false);
 
   const rows = options[field] || [];
+  const showingTeams = field === 'teams';
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -138,10 +139,27 @@ export function SetupView({ options, onState, isAdmin }) {
               {item.label}
             </button>
           ))}
+          {isAdmin ? (
+            <>
+              <div className="mx-2 my-1 border-t border-line" />
+              <button
+                type="button"
+                aria-pressed={showingTeams}
+                onClick={() => {
+                  setField('teams');
+                  setMessage('');
+                }}
+                className={`block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold ${showingTeams ? 'bg-navy-800 text-white' : 'text-ink hover:bg-paper'}`}
+              >
+                Microsoft Teams
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
 
       <div className="grid gap-8">
+        {showingTeams ? null : (
         <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
           <h2 className="font-display text-xl text-navy-900">{SETUP_FIELDS.find((item) => item.key === field)?.label}</h2>
           <div className="mt-4 flex flex-wrap items-end gap-3">
@@ -173,8 +191,9 @@ export function SetupView({ options, onState, isAdmin }) {
             ))}
           </ul>
         </section>
+        )}
 
-        {isAdmin ? (
+        {isAdmin && !showingTeams ? (
           <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
             <h2 className="font-display text-xl text-navy-900">Team</h2>
             <p className="mt-1 text-sm text-muted">Administrators can add people and remove other accounts. Everyone who can sign in can edit the register.</p>
@@ -218,7 +237,7 @@ export function SetupView({ options, onState, isAdmin }) {
           </section>
         ) : null}
 
-        {isAdmin ? (
+        {isAdmin && showingTeams ? (
           <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
             <h2 className="font-display text-xl text-navy-900">Microsoft Teams</h2>
             <p className="mt-1 text-sm text-muted">

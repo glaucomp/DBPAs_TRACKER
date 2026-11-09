@@ -5,7 +5,7 @@ export const VIEWS = [
   { id: 'projects', label: 'Projects', description: 'The full project register.' },
   { id: 'issued', label: 'Issued DBPAs', description: 'Every issuance, newest first. Earlier issues keep their history.' },
   { id: 'mine', label: 'My Projects', description: 'Filter the register by who the work is assigned to.' },
-  { id: 'setup', label: 'Setup', description: 'Dropdown lists used on the project form, and team access for administrators.' },
+  { id: 'setup', label: 'Setup', description: 'Dropdown lists used on the project form. Administrators also manage team access and the Microsoft Teams channel.' },
 ];
 
 export const SETUP_FIELDS = [
