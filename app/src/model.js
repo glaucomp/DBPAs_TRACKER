@@ -130,6 +130,7 @@ export function groupOverview(projects, statusOptions) {
   return { sections, unassigned };
 }
 
+<<<<<<< Updated upstream
 export function statusChart(projects, statusOptions) {
   const labels = statusOptions.map((option) => option.label);
   const counts = new Map(labels.map((label) => [label, 0]));
@@ -139,6 +140,13 @@ export function statusChart(projects, statusOptions) {
     if (project.issuedOnly || isCompleted(project.status)) continue;
     if (counts.has(project.status)) counts.set(project.status, counts.get(project.status) + 1);
     else unassigned += 1;
+=======
+export function statusChart(projects, statusOptions, today = todayISO()) {
+  const { sections, unassigned } = groupOverview(projects, statusOptions);
+  const bars = sections.map(([label, rows]) => summarizeStatus(label, rows, today));
+  if (unassigned.length > 0) {
+    bars.push(summarizeStatus(UNCONFIGURED_STATUS, unassigned, today));
+>>>>>>> Stashed changes
   }
 
   const bars = [...counts.entries()]
@@ -148,6 +156,12 @@ export function statusChart(projects, statusOptions) {
 
   if (unassigned > 0) bars.push({ label: UNCONFIGURED_STATUS, count: unassigned });
   return bars;
+}
+
+function summarizeStatus(label, rows, today) {
+  const settled = (label || '').trim().toLowerCase() === 'approved';
+  const overdue = settled ? 0 : rows.filter((project) => project.due && project.due < today).length;
+  return { label, count: rows.length, overdue };
 }
 
 export function matchesStatusFocus(project, statusFocus, statusOptions) {

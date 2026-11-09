@@ -36,7 +36,6 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
     registerIsEmpty,
     searching,
   });
-  const peak = Math.max(0, ...chart.map((bar) => bar.count));
 
   useEffect(() => {
     if (statusFocus && !statusActive) setStatusFocus(null);
@@ -72,7 +71,7 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
       ) : null}
 
       {chart.length > 0 ? (
-        <StatusChart bars={chart} peak={peak} pressed={statusActive} onChoose={chooseStatus} />
+        <StatusChart bars={chart} pressed={statusActive} onChoose={chooseStatus} />
       ) : null}
 
       {notice === 'sample' ? (
@@ -128,42 +127,80 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
   );
 }
 
-function StatusChart({ bars, peak, pressed, onChoose }) {
+function StatusChart({ bars, pressed, onChoose }) {
+  const total = bars.reduce((sum, bar) => sum + bar.count, 0);
+  const overdue = bars.reduce((sum, bar) => sum + bar.overdue, 0);
+  const shares = sharePercents(bars, total);
+
   return (
-    <section className="rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-5">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h2 className="font-display text-xl text-navy-900">Open jobs by status</h2>
-          <p className="mt-1 text-sm text-muted">Click a bar to focus the lists below.</p>
-        </div>
+    <section className="rounded-2xl border border-line bg-white px-4 py-3 shadow-sm">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+        <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Open jobs by status</h2>
+        <p className="text-xs text-muted">
+          <span className="font-semibold tabular-nums text-navy-900">{total}</span> open
+          {overdue > 0 ? (
+            <>
+              {' · '}
+              <span className="font-semibold text-red-700">{overdue} overdue</span>
+            </>
+          ) : null}
+        </p>
       </div>
-      <div className="mt-4 grid gap-3" role="group" aria-label="Open jobs by status">
+      <div className="mt-2 flex h-2.5 gap-px overflow-hidden rounded-full bg-white" aria-hidden="true">
         {bars.map((bar) => {
-          const width = peak > 0 ? Math.max((bar.count / peak) * 100, bar.count > 0 ? 6 : 0) : 0;
           const selected = pressed === bar.label;
+          return (
+            <span
+              key={bar.label}
+              className={`h-full ${statusBarFill(bar.label)} ${pressed && !selected ? 'opacity-30' : ''}`}
+              style={{ flex: `${bar.count} 1 0` }}
+            />
+          );
+        })}
+      </div>
+      <div className="mt-1.5 grid grid-cols-1 gap-x-4 sm:grid-cols-2" role="group" aria-label="Open jobs by status">
+        {bars.map((bar, index) => {
+          const selected = pressed === bar.label;
+          const share = shares[index];
           return (
             <button
               key={bar.label}
               type="button"
               aria-pressed={selected}
-              aria-label={`${bar.label}, ${bar.count} open ${bar.count === 1 ? 'job' : 'jobs'}`}
+              aria-label={`${bar.label}, ${bar.count} open ${bar.count === 1 ? 'job' : 'jobs'}, ${share} percent${bar.overdue ? `, ${bar.overdue} overdue` : ''}`}
+              title={bar.overdue ? `${bar.label}: ${bar.overdue} overdue` : bar.label}
               onClick={() => onChoose(bar.label)}
-              className={`grid cursor-pointer grid-cols-[minmax(7.5rem,11rem)_minmax(0,1fr)_2.5rem] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:border-navy-800/35 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${selected ? 'border-navy-800 bg-sky-50 ring-2 ring-navy-800/10' : 'border-transparent bg-paper/60'}`}
+              className={`flex min-w-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 text-left transition hover:bg-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${selected ? 'bg-sky-100 ring-2 ring-navy-800' : ''}`}
             >
-              <span className="truncate text-sm font-semibold text-ink">{bar.label}</span>
-              <span className="h-3 overflow-hidden rounded-full bg-line/80" aria-hidden="true">
-                <span
-                  className={`block h-full rounded-full ${statusBarFill(bar.label)}`}
-                  style={{ width: `${width}%` }}
-                />
-              </span>
-              <span className="text-right font-display text-lg text-navy-900">{bar.count}</span>
+              <span className={`size-2 shrink-0 rounded-full ${statusBarFill(bar.label)}`} aria-hidden="true" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-semibold text-ink">{bar.label}</span>
+              {bar.overdue > 0 ? (
+                <span className="shrink-0 text-[11px] font-bold text-red-700">{bar.overdue} overdue</span>
+              ) : null}
+              <span className="w-8 shrink-0 text-right text-sm font-semibold tabular-nums text-navy-900">{bar.count}</span>
+              <span className="w-9 shrink-0 text-right text-xs tabular-nums text-muted">{share}%</span>
             </button>
           );
         })}
       </div>
     </section>
   );
+}
+
+function sharePercents(bars, total) {
+  if (total <= 0) return bars.map(() => 0);
+  const raw = bars.map((bar) => (bar.count / total) * 100);
+  const floors = raw.map((value) => Math.floor(value));
+  let remainder = 100 - floors.reduce((sum, value) => sum + value, 0);
+  const order = raw
+    .map((value, index) => ({ index, fraction: value - floors[index] }))
+    .sort((left, right) => right.fraction - left.fraction || left.index - right.index);
+  const percents = [...floors];
+  for (let index = 0; index < order.length && remainder > 0; index += 1) {
+    percents[order[index].index] += 1;
+    remainder -= 1;
+  }
+  return percents;
 }
 
 function Metric({ icon: Icon, label, value, detail, pressed, onClick }) {
