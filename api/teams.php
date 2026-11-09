@@ -29,15 +29,23 @@ function ensure_settings_table(PDO $pdo): void
 
 function teams_webhook_url(PDO $pdo): string
 {
-    ensure_settings_table($pdo);
-    $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ?');
-    $stmt->execute([TEAMS_WEBHOOK_KEY]);
-    $value = $stmt->fetchColumn();
-    return is_string($value) ? $value : '';
+    try {
+        $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ?');
+        $stmt->execute([TEAMS_WEBHOOK_KEY]);
+        $value = $stmt->fetchColumn();
+        return is_string($value) ? $value : '';
+    } catch (PDOException $e) {
+        // If the settings table does not exist yet, treat Teams as not configured.
+        if ($e->getCode() === '42S02') {
+            return '';
+        }
+        throw $e;
+    }
 }
 
 function teams_is_configured(PDO $pdo): bool
 {
+    ensure_settings_table($pdo);
     return teams_webhook_url($pdo) !== '';
 }
 
