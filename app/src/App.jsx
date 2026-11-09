@@ -200,6 +200,7 @@ function Tracker({ initial, onSignOut }) {
             sampling={sampling}
             registerIsEmpty={data.projects.length === 0}
             searching={query.trim() !== ''}
+            onOpenIssued={() => selectView('issued')}
           />
         ) : null}
 
