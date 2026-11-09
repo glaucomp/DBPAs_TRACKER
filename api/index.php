@@ -6,6 +6,7 @@ ini_set('display_errors', '0');
 
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/repository.php';
+require __DIR__ . '/teams.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -86,8 +87,9 @@ function dispatch(): void
 
     if ($method === 'POST' && $path === '/projects') {
         $input = body();
-        save_project($pdo, $input, null, !empty($input['issuedOnly']));
-        respond($pdo);
+        $teamsWarning = save_project($pdo, $input, null, !empty($input['issuedOnly']));
+        $extra = $teamsWarning !== null ? ['teamsWarning' => $teamsWarning] : [];
+        respond($pdo, $extra);
     }
 
     if ($method === 'PUT' && preg_match('#^/projects/(\d+)$#', $path, $matches)) {
@@ -118,6 +120,24 @@ function dispatch(): void
     if ($method === 'DELETE' && preg_match('#^/options/(\d+)$#', $path, $matches)) {
         delete_option($pdo, (int) $matches[1]);
         respond($pdo);
+    }
+
+    if ($method === 'GET' && $path === '/settings/teams') {
+        require_admin($pdo);
+        echo json_encode([
+            'configured' => teams_is_configured($pdo),
+            'csrf' => $_SESSION['csrf'],
+        ], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    if ($method === 'PUT' && $path === '/settings/teams') {
+        save_teams_webhook($pdo, body());
+        echo json_encode([
+            'configured' => teams_is_configured($pdo),
+            'csrf' => $_SESSION['csrf'],
+        ], JSON_UNESCAPED_UNICODE);
+        return;
     }
 
     if ($method === 'GET' && $path === '/users') {

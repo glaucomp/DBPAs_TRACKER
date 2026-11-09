@@ -108,7 +108,9 @@ function Tracker({ initial, onSignOut }) {
       text = `${payload.number} saved.`;
     } else {
       next = await api('/projects', { method: 'POST', body: { ...payload, issuedOnly: Boolean(editor.issuedOnly) } });
-      text = `${payload.number} added.`;
+      text = next.teamsWarning
+        ? `${payload.number} added, but Teams was not notified.`
+        : `${payload.number} added.`;
     }
     setData(next);
     setEditor(null);

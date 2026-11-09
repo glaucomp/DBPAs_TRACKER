@@ -90,9 +90,12 @@ function state_payload(PDO $pdo, array $user): array
     ];
 }
 
-function respond(PDO $pdo): never
+function respond(PDO $pdo, array $extra = []): never
 {
-    echo json_encode(state_payload($pdo, require_user($pdo)), JSON_UNESCAPED_UNICODE);
+    echo json_encode(
+        array_merge(state_payload($pdo, require_user($pdo)), $extra),
+        JSON_UNESCAPED_UNICODE
+    );
     exit;
 }
 
@@ -254,9 +257,12 @@ function replace_issuances(PDO $pdo, int $projectId, array $history): void
     }
 }
 
-function save_project(PDO $pdo, array $input, ?int $id, bool $issuedOnlyOnCreate): void
+/**
+ * Saves a project. On create, may notify Teams and return a warning string if that fails.
+ */
+function save_project(PDO $pdo, array $input, ?int $id, bool $issuedOnlyOnCreate): ?string
 {
-    require_user($pdo);
+    $user = require_user($pdo);
     $existing = null;
     if ($id !== null) {
         $existing = find_project($pdo, $id);
@@ -273,6 +279,12 @@ function save_project(PDO $pdo, array $input, ?int $id, bool $issuedOnlyOnCreate
         ? ($existing['issuedOnly'] ? 1 : 0)
         : ($issuedOnlyOnCreate ? 1 : 0);
     write_project($pdo, $project, $history, $issuedOnly, $id);
+
+    if ($id !== null) {
+        return null;
+    }
+
+    return notify_teams_new_project($pdo, $project, $user);
 }
 
 function delete_project(PDO $pdo, int $id): void
