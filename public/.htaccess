@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# The API is a real folder. Leave it alone.
+RewriteRule ^api/ - [L]
+
+# Files such as the logo, favicon, and built assets are served as themselves.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+RewriteRule ^ index.html [L]

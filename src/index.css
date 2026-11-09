@@ -1,0 +1,42 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Source Sans 3", "Segoe UI", sans-serif;
+  --font-display: "Outfit", "Source Sans 3", sans-serif;
+  --color-navy-950: #041525;
+  --color-navy-900: #06213f;
+  --color-navy-800: #073776;
+  --color-navy-700: #0c4c96;
+  --color-sky-500: #209bf9;
+  --color-sky-100: #e7f4fe;
+  --color-ink: #172942;
+  --color-muted: #5d6e86;
+  --color-paper: #f4f7fb;
+  --color-line: #d5dfeb;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+dialog {
+  margin: auto;
+  max-width: calc(100vw - 2rem);
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: white;
+}
+
+dialog::backdrop {
+  background: rgb(4 21 37 / 0.55);
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  cursor: pointer;
+}
