@@ -8,7 +8,7 @@ import {
   issuedRows,
   metrics,
   statusRank,
-} from '../src/model.js';
+} from '../app/src/model.js';
 
 const statuses = [
   'New Job',

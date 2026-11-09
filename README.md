@@ -4,19 +4,23 @@ Design register for CORE Consulting Engineers. The screens are a React app style
 
 ## Publish on Hostinger
 
+Hostinger deploys this git repository. The site root has to be the built page, not the Vite source. `npm run build` writes that page to `index.html`, `assets/`, and `.htaccess` in the repository root. Those files are committed and go out with `git push`.
+
 1. In hPanel, open **Websites → Manage → Databases → MySQL Databases**. Create a database and a user, and add the user to the database with all privileges. Note the host (usually `localhost`), database name, user, and password.
 2. Open **phpMyAdmin**, select that database, and import `database/schema.sql`.
-3. On your computer, copy `api/config.example.php` to `api/config.php` and fill in those four database values.
-4. Install dependencies and build the site:
+3. On the server, copy `api/config.example.php` to `api/config.php` and fill in those four database values. `config.php` is not in git.
+4. After a change to the React app, build, commit, and push:
 
    ```bash
    npm install
    npm run build
+   git add index.html assets .htaccess
+   git commit -m "Build the tracker for Hostinger"
+   git push
    ```
 
-5. Upload **the contents** of `dist/` into `public_html` (`index.html`, `assets/`, `.htaccess`, the logo, and the favicon).
-6. Upload the whole `api/` folder to `public_html/api`, including `config.php`. Do not upload `node_modules`.
-7. Open the site. The first visit asks you to create the administrator. After that, sign in and add the rest of the team from **Setup**.
+5. If hPanel does not deploy on push by itself, open **Advanced → GIT** and deploy `main`.
+6. Open the site. The first visit asks you to create the administrator. After that, sign in and add the rest of the team from **Setup**.
 
 The dropdowns from the original tracker (assignees, stages, statuses, programs, engineers, priorities) are already in the database. Rename or delete them in **Setup**. **Load sample projects** on an empty register fills in the demo jobs so you can see the overview; delete them when you are ready for live work.
 
