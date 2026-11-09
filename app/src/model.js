@@ -106,6 +106,8 @@ export function filterProjects(projects, { query = '', owner = '' } = {}) {
   });
 }
 
+export const UNCONFIGURED_STATUS = 'No configured status';
+
 export function groupOverview(projects, statusOptions) {
   const labels = statusOptions.map((option) => option.label);
   const byStatus = new Map(labels.map((status) => [status, []]));
@@ -126,6 +128,24 @@ export function groupOverview(projects, statusOptions) {
   unassigned.sort(compareDue);
 
   return { sections, unassigned };
+}
+
+export function statusChart(projects, statusOptions) {
+  const { sections, unassigned } = groupOverview(projects, statusOptions);
+  const bars = sections.map(([label, rows]) => ({ label, count: rows.length }));
+  if (unassigned.length > 0) {
+    bars.push({ label: UNCONFIGURED_STATUS, count: unassigned.length });
+  }
+  return bars;
+}
+
+export function matchesStatusFocus(project, statusFocus, statusOptions) {
+  if (!statusFocus) return true;
+  if (statusFocus === UNCONFIGURED_STATUS) {
+    const labels = new Set(statusOptions.map((option) => option.label));
+    return !labels.has(project.status);
+  }
+  return project.status === statusFocus;
 }
 
 export function issuedRows(projects) {

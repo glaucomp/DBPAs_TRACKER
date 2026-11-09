@@ -7,9 +7,12 @@ import {
   groupOverview,
   issuedRows,
   matchesMetric,
+  matchesStatusFocus,
   metrics,
   overviewNotice,
+  statusChart,
   statusRank,
+  UNCONFIGURED_STATUS,
 } from '../app/src/model.js';
 
 const statuses = [
@@ -107,6 +110,19 @@ test('metric filters select the same jobs the cards count', () => {
   assert.equal(matchesMetric(waiting, 'due', today), true);
   assert.equal(matchesMetric(projects[3], 'active', today), false);
   assert.equal(matchesMetric(projects[4], 'due', today), false);
+});
+
+test('status chart follows working order and counts open jobs only', () => {
+  assert.deepEqual(statusChart(projects, statuses), [
+    { label: 'In Progress', count: 1 },
+    { label: 'For Update / Revision', count: 1 },
+    { label: 'New Job', count: 1 },
+    { label: UNCONFIGURED_STATUS, count: 1 },
+  ]);
+  assert.equal(matchesStatusFocus(projects[1], 'In Progress', statuses), true);
+  assert.equal(matchesStatusFocus(projects[0], 'In Progress', statuses), false);
+  assert.equal(matchesStatusFocus(projects[5], UNCONFIGURED_STATUS, statuses), true);
+  assert.equal(matchesStatusFocus(projects[1], UNCONFIGURED_STATUS, statuses), false);
 });
 
 test('a due or approval filter keeps the empty-register and search prompts', () => {

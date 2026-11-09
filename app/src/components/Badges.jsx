@@ -1,6 +1,6 @@
 import { formatDate, isCompleted, todayISO } from '../model.js';
 
-const STATUS_STYLES = {
+export const STATUS_STYLES = {
   'new job': 'bg-slate-100 text-slate-700',
   'in progress': 'bg-sky-100 text-sky-900',
   'on hold': 'bg-amber-100 text-amber-900',
@@ -10,6 +10,22 @@ const STATUS_STYLES = {
   'upcoming projects': 'bg-cyan-100 text-cyan-950',
   completed: 'bg-emerald-50 text-emerald-700',
 };
+
+export const STATUS_BAR_FILLS = {
+  'new job': 'bg-slate-500',
+  'in progress': 'bg-sky-500',
+  'on hold': 'bg-amber-500',
+  approved: 'bg-emerald-500',
+  'for update / revision': 'bg-orange-500',
+  'waiting for approval': 'bg-violet-500',
+  'upcoming projects': 'bg-cyan-500',
+  completed: 'bg-emerald-400',
+};
+
+export function statusBarFill(label) {
+  if (!label) return 'bg-navy-800';
+  return STATUS_BAR_FILLS[label.trim().toLowerCase()] || 'bg-navy-800';
+}
 
 const PRIORITY_STYLES = {
   low: 'bg-slate-100 text-slate-600',
