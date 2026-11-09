@@ -54,4 +54,4 @@ When someone adds a project, the tracker can post a short Adaptive Card into a T
 3. Under **Microsoft Teams**, paste the URL and save. The tracker only confirms that a webhook is configured; it never shows the URL again.
 4. Add a project and check the channel for the card. If Teams is unreachable, the project still saves and the toast says Teams was not notified.
 
-To stop notifications, clear the field on Setup and save. On an existing Hostinger database the `settings` table is created automatically the first time an administrator opens or saves the Teams setting; new installs get it from `database/schema.sql`.
+To stop notifications, clear the field on Setup and save. On an existing Hostinger database the `settings` table is created automatically the first time the tracker needs it (when an administrator opens or saves the Teams setting, or when someone adds a project and the notifier checks for a webhook); new installs get it from `database/schema.sql`.
