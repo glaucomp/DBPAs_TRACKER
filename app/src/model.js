@@ -33,6 +33,34 @@ export function isCompleted(status) {
   return (status || '').trim().toLowerCase() === 'completed';
 }
 
+export function isOpenJob(project) {
+  return !project.issuedOnly && !isCompleted(project.status);
+}
+
+export function isDueByMonthEnd(project, today = todayISO()) {
+  return Boolean(project.due) && project.due <= endOfMonth(today);
+}
+
+export function isWaitingApproval(project) {
+  return (project.status || '').trim().toLowerCase() === 'waiting for approval';
+}
+
+export function matchesMetric(project, metric, today = todayISO()) {
+  if (!isOpenJob(project)) return false;
+  if (metric === 'active') return true;
+  if (metric === 'due') return isDueByMonthEnd(project, today);
+  if (metric === 'approval') return isWaitingApproval(project);
+  return false;
+}
+
+export function overviewNotice(focus, { open, projectCount, registerIsEmpty, searching }) {
+  if (open) return null;
+  if (registerIsEmpty && !searching) return 'sample';
+  if (projectCount === 0) return 'search';
+  if (focus === 'due' || focus === 'approval') return 'filter';
+  return 'idle';
+}
+
 export function statusRank(status) {
   const rank = STATUS_RANK.get((status || '').trim().toLowerCase());
   return rank === undefined ? STATUS_RANK.size : rank;
@@ -124,12 +152,11 @@ export function issuedRows(projects) {
 }
 
 export function metrics(projects, today = todayISO()) {
-  const monthEnd = endOfMonth(today);
-  const active = projects.filter((project) => !project.issuedOnly && !isCompleted(project.status));
+  const active = projects.filter((project) => isOpenJob(project));
   return {
     active: active.length,
-    due: active.filter((project) => project.due && project.due <= monthEnd).length,
-    approval: active.filter((project) => (project.status || '').trim().toLowerCase() === 'waiting for approval').length,
+    due: active.filter((project) => isDueByMonthEnd(project, today)).length,
+    approval: active.filter((project) => isWaitingApproval(project)).length,
     issuances: projects.reduce((total, project) => total + (project.issuances?.length || 0), 0),
     completed: projects.filter((project) => isCompleted(project.status)).length,
     issuedOnly: projects.filter((project) => project.issuedOnly).length,

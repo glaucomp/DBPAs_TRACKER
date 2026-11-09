@@ -6,7 +6,9 @@ import {
   formatDate,
   groupOverview,
   issuedRows,
+  matchesMetric,
   metrics,
+  overviewNotice,
   statusRank,
 } from '../app/src/model.js';
 
@@ -83,4 +85,38 @@ test('dates format for Australia and metrics count open work', () => {
   assert.equal(summary.issuances, 3);
   assert.equal(summary.due, 3);
   assert.equal(summary.approval, 0);
+});
+
+test('metric filters select the same jobs the cards count', () => {
+  const today = '2026-11-09';
+  const waiting = {
+    id: 8,
+    number: 'DEMO-108',
+    name: 'Held',
+    status: 'Waiting for Approval',
+    due: '2026-10-01',
+    issuedOnly: false,
+    issuances: [],
+  };
+  const rows = [...projects, waiting];
+  const summary = metrics(rows, today);
+  for (const metric of ['active', 'due', 'approval']) {
+    assert.equal(rows.filter((project) => matchesMetric(project, metric, today)).length, summary[metric]);
+  }
+  assert.equal(matchesMetric(waiting, 'approval', today), true);
+  assert.equal(matchesMetric(waiting, 'due', today), true);
+  assert.equal(matchesMetric(projects[3], 'active', today), false);
+  assert.equal(matchesMetric(projects[4], 'due', today), false);
+});
+
+test('a due or approval filter keeps the empty-register and search prompts', () => {
+  const empty = { open: false, projectCount: 0, registerIsEmpty: true, searching: false };
+  assert.equal(overviewNotice(null, empty), 'sample');
+  assert.equal(overviewNotice('due', empty), 'sample');
+  assert.equal(overviewNotice('approval', empty), 'sample');
+  assert.equal(overviewNotice('due', { ...empty, searching: true }), 'search');
+  assert.equal(overviewNotice('approval', { open: false, projectCount: 0, registerIsEmpty: false, searching: true }), 'search');
+  assert.equal(overviewNotice('due', { open: false, projectCount: 4, registerIsEmpty: false, searching: false }), 'filter');
+  assert.equal(overviewNotice('active', { open: false, projectCount: 4, registerIsEmpty: false, searching: false }), 'idle');
+  assert.equal(overviewNotice('due', { open: true, projectCount: 4, registerIsEmpty: false, searching: false }), null);
 });
