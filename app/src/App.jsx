@@ -62,7 +62,9 @@ export default function App() {
 
 function Tracker({ initial, onSignOut }) {
   const [data, setData] = useState(initial);
-  const [view, setView] = useState('overview');
+  const [view, setView] = useState(() => (
+    new URLSearchParams(window.location.search).get('view') === 'setup' ? 'setup' : 'overview'
+  ));
   const [query, setQuery] = useState('');
   const [owner, setOwner] = useState(() => initialOwner(initial));
   const [editor, setEditor] = useState(null);

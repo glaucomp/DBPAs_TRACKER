@@ -27,15 +27,15 @@ function ensure_settings_table(PDO $pdo): void
     $ready = true;
 }
 
-function teams_webhook_url(PDO $pdo): string
+function setting_get(PDO $pdo, string $key): string
 {
     try {
         $stmt = $pdo->prepare('SELECT setting_value FROM settings WHERE setting_key = ?');
-        $stmt->execute([TEAMS_WEBHOOK_KEY]);
+        $stmt->execute([$key]);
         $value = $stmt->fetchColumn();
         return is_string($value) ? $value : '';
     } catch (PDOException $e) {
-        // If the settings table does not exist yet, treat Teams as not configured.
+        // If the settings table does not exist yet, treat the value as unset.
         if ($e->getCode() === '42S02') {
             return '';
         }
@@ -43,10 +43,31 @@ function teams_webhook_url(PDO $pdo): string
     }
 }
 
+function setting_put(PDO $pdo, string $key, string $value): void
+{
+    ensure_settings_table($pdo);
+    $stmt = $pdo->prepare(
+        'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+    );
+    $stmt->execute([$key, $value]);
+}
+
+function setting_delete(PDO $pdo, string $key): void
+{
+    ensure_settings_table($pdo);
+    $pdo->prepare('DELETE FROM settings WHERE setting_key = ?')->execute([$key]);
+}
+
+function teams_webhook_url(PDO $pdo): string
+{
+    return setting_get($pdo, TEAMS_WEBHOOK_KEY);
+}
+
 function teams_is_configured(PDO $pdo): bool
 {
     ensure_settings_table($pdo);
-    return teams_webhook_url($pdo) !== '';
+    return teams_notify_ready($pdo);
 }
 
 function teams_webhook_host_allowed(string $host): bool
@@ -94,15 +115,11 @@ function save_teams_webhook(PDO $pdo, array $input): void
     $url = validate_teams_webhook_url((string) ($input['webhookUrl'] ?? ''));
 
     if ($url === '') {
-        $pdo->prepare('DELETE FROM settings WHERE setting_key = ?')->execute([TEAMS_WEBHOOK_KEY]);
+        setting_delete($pdo, TEAMS_WEBHOOK_KEY);
         return;
     }
 
-    $stmt = $pdo->prepare(
-        'INSERT INTO settings (setting_key, setting_value) VALUES (?, ?)
-         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
-    );
-    $stmt->execute([TEAMS_WEBHOOK_KEY, $url]);
+    setting_put($pdo, TEAMS_WEBHOOK_KEY, $url);
 }
 
 /**
@@ -111,6 +128,15 @@ function save_teams_webhook(PDO $pdo, array $input): void
  */
 function notify_teams_new_project(PDO $pdo, array $project, array $user): ?string
 {
+    try {
+        if (teams_notify_method($pdo) === 'graph') {
+            return teams_graph_notify($pdo, $project, $user);
+        }
+    } catch (Throwable $e) {
+        error_log('DBPA tracker Teams: ' . $e->getMessage());
+        return 'Teams was not notified.';
+    }
+
     $url = teams_webhook_url($pdo);
     if ($url === '') {
         return null;

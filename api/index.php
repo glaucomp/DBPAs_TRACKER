@@ -7,6 +7,7 @@ ini_set('display_errors', '0');
 require __DIR__ . '/bootstrap.php';
 require __DIR__ . '/repository.php';
 require __DIR__ . '/teams.php';
+require __DIR__ . '/teams_graph.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -122,22 +123,69 @@ function dispatch(): void
         respond($pdo);
     }
 
+    if ($method === 'GET' && $path === '/settings/teams/callback') {
+        try {
+            teams_graph_finish_connect($pdo, $_GET);
+        } catch (Throwable $e) {
+            error_log('DBPA tracker Teams sign-in: ' . $e->getMessage());
+            teams_graph_browser_redirect('failed');
+        }
+    }
+
     if ($method === 'GET' && $path === '/settings/teams') {
         require_admin($pdo);
+        teams_settings_json($pdo);
+    }
+
+    if ($method === 'PUT' && $path === '/settings/teams') {
+        save_teams_webhook($pdo, body());
+        teams_settings_json($pdo);
+    }
+
+    if ($method === 'PUT' && $path === '/settings/teams/method') {
+        save_teams_method($pdo, body());
+        teams_settings_json($pdo);
+    }
+
+    if ($method === 'PUT' && $path === '/settings/teams/graph') {
+        save_teams_graph_app($pdo, body());
+        teams_settings_json($pdo);
+    }
+
+    if ($method === 'POST' && $path === '/settings/teams/graph/connect') {
         echo json_encode([
-            'configured' => teams_is_configured($pdo),
+            'authorizeUrl' => teams_graph_connect_url($pdo),
             'csrf' => $_SESSION['csrf'],
         ], JSON_UNESCAPED_UNICODE);
         return;
     }
 
-    if ($method === 'PUT' && $path === '/settings/teams') {
-        save_teams_webhook($pdo, body());
+    if ($method === 'POST' && $path === '/settings/teams/graph/disconnect') {
+        teams_graph_disconnect($pdo);
+        teams_settings_json($pdo);
+    }
+
+    if ($method === 'GET' && $path === '/settings/teams/graph/teams') {
+        require_admin($pdo);
         echo json_encode([
-            'configured' => teams_is_configured($pdo),
+            'teams' => teams_graph_teams($pdo),
             'csrf' => $_SESSION['csrf'],
         ], JSON_UNESCAPED_UNICODE);
         return;
+    }
+
+    if ($method === 'GET' && preg_match('#^/settings/teams/graph/channels/([0-9a-fA-F-]{36})$#', $path, $matches)) {
+        require_admin($pdo);
+        echo json_encode([
+            'channels' => teams_graph_channels($pdo, $matches[1]),
+            'csrf' => $_SESSION['csrf'],
+        ], JSON_UNESCAPED_UNICODE);
+        return;
+    }
+
+    if ($method === 'PUT' && $path === '/settings/teams/graph/target') {
+        save_teams_graph_target($pdo, body());
+        teams_settings_json($pdo);
     }
 
     if ($method === 'GET' && $path === '/users') {

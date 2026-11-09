@@ -47,11 +47,28 @@ Open http://localhost:5173.
 
 ## Microsoft Teams
 
-When someone adds a project, the tracker can post a short Adaptive Card into a Teams channel. Edits, deletes, and **Load sample projects** stay silent. The webhook URL is stored in MySQL (`settings`); `api/config.php` is unchanged.
+When someone adds a project, the tracker can post a short note into a Teams channel. Edits, deletes, and **Load sample projects** stay silent. An administrator chooses the method in **Setup → Microsoft Teams**. The webhook URL, Azure app secret, and Microsoft sign-in are stored in MySQL (`settings`). `api/config.php` is unchanged, and the page never shows the secret or webhook again.
+
+On an existing Hostinger database the `settings` table is created automatically the first time the tracker needs it. New installs get it from `database/schema.sql`. If Teams is unreachable, the project still saves and the toast says Teams was not notified.
+
+### Workflows webhook
 
 1. In the Teams channel, open **Workflows** and create **Post to a channel when a webhook request is received**. Copy the webhook URL.
-2. Sign in to the tracker as an administrator and open **Setup**.
-3. Under **Microsoft Teams**, paste the URL and save. The tracker only confirms that a webhook is configured; it never shows the URL again.
-4. Add a project and check the channel for the card. If Teams is unreachable, the project still saves and the toast says Teams was not notified.
+2. Sign in to the tracker as an administrator and open **Setup → Microsoft Teams**.
+3. Choose **Workflows webhook**, paste the URL, and save.
+4. Add a project and check the channel.
 
-To stop notifications, clear the field on Setup and save. On an existing Hostinger database the `settings` table is created automatically the first time the tracker needs it (when an administrator opens or saves the Teams setting, or when someone adds a project and the notifier checks for a webhook); new installs get it from `database/schema.sql`.
+To stop webhook notifications, clear the field and save, or switch the choice to Microsoft Graph.
+
+### Microsoft Graph
+
+Graph posts the note as a signed-in Microsoft 365 user who is a member of the team. Calls, meetings, and chats are not part of this tracker.
+
+1. In Microsoft Entra, register a single-tenant app.
+2. Add a **Web** redirect URI. Setup shows the exact URI for this site (local and the public site are different).
+3. Create a client secret.
+4. Add delegated Microsoft Graph permissions: `User.Read`, `Team.ReadBasic.All`, `Channel.ReadBasic.All`, and `ChannelMessage.Send`. Grant admin consent. The sign-in also requests `offline_access` so the tracker can refresh the connection.
+5. In Setup, choose **Microsoft Graph**, paste the Directory (tenant) ID, Application (client) ID, and client secret, and save.
+6. Connect the Microsoft account, then choose the team and channel.
+
+Changing the tenant or client ID disconnects the account. Disconnect leaves the Azure app saved and stops Graph posts until you connect again.
