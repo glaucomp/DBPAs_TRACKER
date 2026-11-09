@@ -25,17 +25,10 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
   return (
     <div className="grid gap-6">
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-<<<<<<< Updated upstream
-        <Metric icon={Activity} label="Open jobs" value={summary.active} detail="Excludes completed work" />
-        <Metric icon={CalendarClock} label="Due within 7 days" value={summary.due} detail="Includes anything overdue" />
-        <Metric icon={Hourglass} label="Waiting for approval" value={summary.approval} detail="Held for a decision" />
-        <Metric icon={FileStack} label="Issuances on file" value={summary.issuances} detail="Across every project" />
-=======
         <Metric icon={Activity} label="Open jobs" value={summary.active} detail="Excludes completed work" pressed={focus === 'active'} onClick={() => chooseMetric('active')} />
         <Metric icon={CalendarClock} label="Due this month" value={summary.due} detail="Includes anything overdue" pressed={focus === 'due'} onClick={() => chooseMetric('due')} />
         <Metric icon={Hourglass} label="Waiting for approval" value={summary.approval} detail="Held for a decision" pressed={focus === 'approval'} onClick={() => chooseMetric('approval')} />
         <Metric icon={FileStack} label="Issuances on file" value={summary.issuances} detail="Across every project" onClick={() => chooseMetric('issuances')} />
->>>>>>> Stashed changes
       </section>
       {focus ? (
         <p role="status" className="text-sm font-semibold text-navy-800">

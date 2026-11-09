@@ -63,11 +63,9 @@ export function todayISO(date = new Date()) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-export function addDays(iso, days) {
-  const [year, month, day] = iso.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  date.setDate(date.getDate() + days);
-  return todayISO(date);
+export function endOfMonth(iso) {
+  const [year, month] = iso.split('-').map(Number);
+  return todayISO(new Date(year, month, 0));
 }
 
 export function formatDate(iso) {
@@ -146,20 +144,11 @@ export function issuedRows(projects) {
 }
 
 export function metrics(projects, today = todayISO()) {
-<<<<<<< Updated upstream
-  const horizon = addDays(today, 7);
-  const active = projects.filter((project) => !project.issuedOnly && !isCompleted(project.status));
-  return {
-    active: active.length,
-    due: active.filter((project) => project.due && project.due <= horizon).length,
-    approval: active.filter((project) => (project.status || '').trim().toLowerCase() === 'waiting for approval').length,
-=======
   const active = projects.filter((project) => isOpenJob(project));
   return {
     active: active.length,
     due: active.filter((project) => isDueByMonthEnd(project, today)).length,
     approval: active.filter((project) => isWaitingApproval(project)).length,
->>>>>>> Stashed changes
     issuances: projects.reduce((total, project) => total + (project.issuances?.length || 0), 0),
     completed: projects.filter((project) => isCompleted(project.status)).length,
     issuedOnly: projects.filter((project) => project.issuedOnly).length,

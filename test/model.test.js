@@ -82,7 +82,7 @@ test('dates format for Australia and metrics count open work', () => {
   assert.equal(summary.completed, 1);
   assert.equal(summary.issuedOnly, 1);
   assert.equal(summary.issuances, 3);
-  assert.equal(summary.due, 2);
+  assert.equal(summary.due, 3);
   assert.equal(summary.approval, 0);
 });
 
