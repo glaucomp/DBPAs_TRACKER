@@ -20,8 +20,13 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
   const listed = focus ? projects.filter((project) => matchesMetric(project, focus)) : projects;
   const chart = statusChart(listed, statuses);
   const statusActive = statusFocus && chart.some((bar) => bar.label === statusFocus) ? statusFocus : null;
+  const statusLabels = statusActive === UNCONFIGURED_STATUS ? new Set(statuses.map((option) => option.label)) : null;
   const narrowed = statusActive
-    ? listed.filter((project) => matchesStatusFocus(project, statusActive, statuses))
+    ? listed.filter((project) =>
+        statusActive === UNCONFIGURED_STATUS
+          ? !statusLabels.has(project.status)
+          : matchesStatusFocus(project, statusActive, statuses),
+      )
     : listed;
   const { sections, unassigned } = groupOverview(narrowed, statuses);
   const open = sections.length > 0 || unassigned.length > 0;
