@@ -12,6 +12,11 @@ export function SetupView({ options, onState, isAdmin }) {
   const [users, setUsers] = useState([]);
   const [person, setPerson] = useState({ name: '', email: '', password: '', role: 'member' });
   const [teamError, setTeamError] = useState('');
+  const [teamsConfigured, setTeamsConfigured] = useState(false);
+  const [teamsUrl, setTeamsUrl] = useState('');
+  const [teamsMessage, setTeamsMessage] = useState('');
+  const [teamsTone, setTeamsTone] = useState('info');
+  const [teamsSaving, setTeamsSaving] = useState(false);
 
   const rows = options[field] || [];
 
@@ -22,6 +27,14 @@ export function SetupView({ options, onState, isAdmin }) {
       if (!ignore) setUsers(data.users || []);
     }).catch((error) => {
       if (!ignore) setTeamError(error.message);
+    });
+    api('/settings/teams').then((data) => {
+      if (!ignore) setTeamsConfigured(Boolean(data.configured));
+    }).catch((error) => {
+      if (!ignore) {
+        setTeamsTone('error');
+        setTeamsMessage(error.message);
+      }
     });
     return () => {
       ignore = true;
@@ -86,6 +99,24 @@ export function SetupView({ options, onState, isAdmin }) {
       setUsers(data.users || []);
     } catch (error) {
       setTeamError(error.message);
+    }
+  }
+
+  async function saveTeams(event) {
+    event.preventDefault();
+    setTeamsSaving(true);
+    setTeamsMessage('');
+    try {
+      const data = await api('/settings/teams', { method: 'PUT', body: { webhookUrl: teamsUrl } });
+      setTeamsConfigured(Boolean(data.configured));
+      setTeamsUrl('');
+      setTeamsTone('info');
+      setTeamsMessage(data.configured ? 'Teams channel webhook saved.' : 'Teams webhook cleared.');
+    } catch (error) {
+      setTeamsTone('error');
+      setTeamsMessage(error.message);
+    } finally {
+      setTeamsSaving(false);
     }
   }
 
@@ -184,6 +215,45 @@ export function SetupView({ options, onState, isAdmin }) {
                 </li>
               ))}
             </ul>
+          </section>
+        ) : null}
+
+        {isAdmin ? (
+          <section className="rounded-2xl border border-line bg-white p-5 shadow-sm">
+            <h2 className="font-display text-xl text-navy-900">Microsoft Teams</h2>
+            <p className="mt-1 text-sm text-muted">
+              When a project is added, the tracker posts a short card to a Teams channel. Create a Workflows webhook in that channel
+              (Post to a channel when a webhook request is received), then paste the URL here. The URL is stored in the database and is never shown again after you save.
+            </p>
+            <p className="mt-3 text-sm font-semibold text-navy-800">
+              {teamsConfigured ? 'Channel webhook is configured.' : 'No channel webhook yet.'}
+            </p>
+            <form onSubmit={saveTeams} className="mt-4 grid gap-3">
+              <Field
+                label="Webhook URL"
+                hint={teamsConfigured ? 'Paste a new URL to replace it, or leave blank and save to clear.' : 'Paste the https Workflows webhook URL.'}
+              >
+                <input
+                  className={controlClass}
+                  type="url"
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="https://…"
+                  value={teamsUrl}
+                  onChange={(event) => setTeamsUrl(event.target.value)}
+                />
+              </Field>
+              <div>
+                <Button type="submit" disabled={teamsSaving}>
+                  {teamsSaving ? 'Saving…' : 'Save Teams webhook'}
+                </Button>
+              </div>
+            </form>
+            {teamsMessage ? (
+              <div className="mt-4">
+                <Alert tone={teamsTone}>{teamsMessage}</Alert>
+              </div>
+            ) : null}
           </section>
         ) : null}
       </div>

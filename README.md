@@ -43,4 +43,15 @@ Open http://localhost:5173.
 - **Projects** is the full register. Completed jobs stay here and are left off the overview.
 - **Issued DBPAs** lists every issuance. Editing the latest issue opens the project. Editing an earlier issue changes only that issue date, and the older revisions stay in the history.
 - **My Projects** filters by the person the work is assigned to.
-- **Setup** edits the dropdowns. Administrators also add and remove team accounts.
+- **Setup** edits the dropdowns. Administrators also add and remove team accounts, and can connect a Microsoft Teams channel.
+
+## Microsoft Teams
+
+When someone adds a project, the tracker can post a short Adaptive Card into a Teams channel. Edits, deletes, and **Load sample projects** stay silent. The webhook URL is stored in MySQL (`settings`); `api/config.php` is unchanged.
+
+1. In the Teams channel, open **Workflows** and create **Post to a channel when a webhook request is received**. Copy the webhook URL.
+2. Sign in to the tracker as an administrator and open **Setup**.
+3. Under **Microsoft Teams**, paste the URL and save. The tracker only confirms that a webhook is configured; it never shows the URL again.
+4. Add a project and check the channel for the card. If Teams is unreachable, the project still saves and the toast says Teams was not notified.
+
+To stop notifications, clear the field on Setup and save. On an existing Hostinger database the `settings` table is created automatically the first time the tracker needs it (when an administrator opens or saves the Teams setting, or when someone adds a project and the notifier checks for a webhook); new installs get it from `database/schema.sql`.

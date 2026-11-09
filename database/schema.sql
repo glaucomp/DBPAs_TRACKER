@@ -67,6 +67,12 @@ CREATE TABLE IF NOT EXISTS issuances (
   CONSTRAINT fk_issuances_project FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS settings (
+  setting_key VARCHAR(40) NOT NULL,
+  setting_value TEXT NOT NULL,
+  PRIMARY KEY (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT IGNORE INTO options (field_key, label, sort_order) VALUES
   ('owner', 'Unassigned', 0),
   ('owner', 'Stella', 1),
