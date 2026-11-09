@@ -1,22 +1,46 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, CalendarClock, FileStack, Hourglass } from 'lucide-react';
-import { groupOverview, matchesMetric, metrics, overviewNotice } from '../model.js';
-import { DueDate, PriorityBadge, StatusBadge } from './Badges.jsx';
+import {
+  groupOverview,
+  matchesMetric,
+  matchesStatusFocus,
+  metrics,
+  overviewNotice,
+  statusChart,
+  UNCONFIGURED_STATUS,
+} from '../model.js';
+import { DueDate, PriorityBadge, StatusBadge, statusBarFill } from './Badges.jsx';
 import { DataTable } from './DataTable.jsx';
 import { Button, EmptyState } from './ui.jsx';
 
 export function Overview({ projects, statuses, onEdit, onSample, sampling, registerIsEmpty, searching, onOpenIssued }) {
   const [focus, setFocus] = useState(null);
+  const [statusFocus, setStatusFocus] = useState(null);
   const summary = metrics(projects);
   const listed = focus ? projects.filter((project) => matchesMetric(project, focus)) : projects;
-  const { sections, unassigned } = groupOverview(listed, statuses);
+  const chart = statusChart(listed, statuses);
+  const statusActive = statusFocus && chart.some((bar) => bar.label === statusFocus) ? statusFocus : null;
+  const statusLabels = statusActive === UNCONFIGURED_STATUS ? new Set(statuses.map((option) => option.label)) : null;
+  const narrowed = statusActive
+    ? listed.filter((project) =>
+        statusActive === UNCONFIGURED_STATUS
+          ? !statusLabels.has(project.status)
+          : matchesStatusFocus(project, statusActive, statuses),
+      )
+    : listed;
+  const { sections, unassigned } = groupOverview(narrowed, statuses);
   const open = sections.length > 0 || unassigned.length > 0;
   const notice = overviewNotice(focus, {
-    open,
+    open: open || chart.length > 0,
     projectCount: projects.length,
     registerIsEmpty,
     searching,
   });
+  const peak = Math.max(0, ...chart.map((bar) => bar.count));
+
+  useEffect(() => {
+    if (statusFocus && !statusActive) setStatusFocus(null);
+  }, [statusFocus, statusActive]);
 
   function chooseMetric(metric) {
     if (metric === 'issuances') {
@@ -26,20 +50,29 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
     setFocus((current) => (current === metric ? null : metric));
   }
 
+  function chooseStatus(label) {
+    setStatusFocus((current) => (current === label ? null : label));
+  }
+
   return (
     <div className="grid gap-6">
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric icon={Activity} label="Open jobs" value={summary.active} detail="Excludes completed work" pressed={focus === 'active'} onClick={() => chooseMetric('active')} />
         <Metric icon={CalendarClock} label="Due this month" value={summary.due} detail="Includes anything overdue" pressed={focus === 'due'} onClick={() => chooseMetric('due')} />
         <Metric icon={Hourglass} label="Waiting for approval" value={summary.approval} detail="Held for a decision" pressed={focus === 'approval'} onClick={() => chooseMetric('approval')} />
-        <Metric icon={FileStack} label="Issuances on file" value={summary.issuances} detail="Across every project" onClick={() => chooseMetric('issuances')} />
+        <Metric icon={FileStack} label="Issued DBPAs" value={summary.issuances} detail="Across every project" onClick={() => chooseMetric('issuances')} />
       </section>
-      {focus ? (
+      {focus || statusActive ? (
         <p role="status" className="text-sm font-semibold text-navy-800">
           {focus === 'active' ? `Showing all ${summary.active} open jobs.` : null}
           {focus === 'due' ? `Showing ${summary.due} jobs due this month, including overdue.` : null}
           {focus === 'approval' ? `Showing ${summary.approval} ${summary.approval === 1 ? 'job' : 'jobs'} waiting for approval.` : null}
+          {statusActive ? `${focus ? ' ' : ''}Filtered to ${statusActive}.` : null}
         </p>
+      ) : null}
+
+      {chart.length > 0 ? (
+        <StatusChart bars={chart} peak={peak} pressed={statusActive} onChoose={chooseStatus} />
       ) : null}
 
       {notice === 'sample' ? (
@@ -71,11 +104,17 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
         </EmptyState>
       ) : null}
 
+      {statusActive && !open && chart.length > 0 ? (
+        <EmptyState title={`Nothing in ${statusActive}`}>
+          Choose another status, or clear the filter by clicking the bar again.
+        </EmptyState>
+      ) : null}
+
       {sections.map(([status, rows]) => (
         <ProjectGroup key={status} title={status} rows={rows} onEdit={onEdit} showStatus={false} />
       ))}
       {unassigned.length > 0 ? (
-        <ProjectGroup title="No configured status" rows={unassigned} onEdit={onEdit} showStatus />
+        <ProjectGroup title={UNCONFIGURED_STATUS} rows={unassigned} onEdit={onEdit} showStatus />
       ) : null}
 
       {summary.completed > 0 || summary.issuedOnly > 0 ? (
@@ -86,6 +125,44 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
         </p>
       ) : null}
     </div>
+  );
+}
+
+function StatusChart({ bars, peak, pressed, onChoose }) {
+  return (
+    <section className="rounded-2xl border border-line bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div>
+          <h2 className="font-display text-xl text-navy-900">Open jobs by status</h2>
+          <p className="mt-1 text-sm text-muted">Click a bar to focus the lists below.</p>
+        </div>
+      </div>
+      <div className="mt-4 grid gap-3" role="group" aria-label="Open jobs by status">
+        {bars.map((bar) => {
+          const width = peak > 0 ? Math.max((bar.count / peak) * 100, bar.count > 0 ? 6 : 0) : 0;
+          const selected = pressed === bar.label;
+          return (
+            <button
+              key={bar.label}
+              type="button"
+              aria-pressed={selected}
+              aria-label={`${bar.label}, ${bar.count} open ${bar.count === 1 ? 'job' : 'jobs'}`}
+              onClick={() => onChoose(bar.label)}
+              className={`grid cursor-pointer grid-cols-[minmax(7.5rem,11rem)_minmax(0,1fr)_2.5rem] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition hover:border-navy-800/35 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/70 ${selected ? 'border-navy-800 bg-sky-50 ring-2 ring-navy-800/10' : 'border-transparent bg-paper/60'}`}
+            >
+              <span className="truncate text-sm font-semibold text-ink">{bar.label}</span>
+              <span className="h-3 overflow-hidden rounded-full bg-line/80" aria-hidden="true">
+                <span
+                  className={`block h-full rounded-full ${statusBarFill(bar.label)}`}
+                  style={{ width: `${width}%` }}
+                />
+              </span>
+              <span className="text-right font-display text-lg text-navy-900">{bar.count}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
