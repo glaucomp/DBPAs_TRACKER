@@ -130,31 +130,24 @@ export function groupOverview(projects, statusOptions) {
   return { sections, unassigned };
 }
 
-<<<<<<< Updated upstream
-export function statusChart(projects, statusOptions) {
+export function statusChart(projects, statusOptions, today = todayISO()) {
   const labels = statusOptions.map((option) => option.label);
-  const counts = new Map(labels.map((label) => [label, 0]));
-  let unassigned = 0;
+  const buckets = new Map(labels.map((label) => [label, []]));
+  const unassigned = [];
 
   for (const project of projects) {
     if (project.issuedOnly || isCompleted(project.status)) continue;
-    if (counts.has(project.status)) counts.set(project.status, counts.get(project.status) + 1);
-    else unassigned += 1;
-=======
-export function statusChart(projects, statusOptions, today = todayISO()) {
-  const { sections, unassigned } = groupOverview(projects, statusOptions);
-  const bars = sections.map(([label, rows]) => summarizeStatus(label, rows, today));
-  if (unassigned.length > 0) {
-    bars.push(summarizeStatus(UNCONFIGURED_STATUS, unassigned, today));
->>>>>>> Stashed changes
+    const bucket = buckets.get(project.status);
+    if (bucket) bucket.push(project);
+    else unassigned.push(project);
   }
 
-  const bars = [...counts.entries()]
-    .filter(([, count]) => count > 0)
+  const bars = [...buckets.entries()]
+    .filter(([, rows]) => rows.length > 0)
     .sort(([left], [right]) => statusRank(left) - statusRank(right) || labels.indexOf(left) - labels.indexOf(right))
-    .map(([label, count]) => ({ label, count }));
+    .map(([label, rows]) => summarizeStatus(label, rows, today));
 
-  if (unassigned > 0) bars.push({ label: UNCONFIGURED_STATUS, count: unassigned });
+  if (unassigned.length > 0) bars.push(summarizeStatus(UNCONFIGURED_STATUS, unassigned, today));
   return bars;
 }
 
