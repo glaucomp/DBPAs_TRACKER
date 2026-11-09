@@ -8,6 +8,7 @@ import {
   issuedRows,
   matchesMetric,
   metrics,
+  overviewNotice,
   statusRank,
 } from '../app/src/model.js';
 
@@ -106,4 +107,16 @@ test('metric filters select the same jobs the cards count', () => {
   assert.equal(matchesMetric(waiting, 'due', today), true);
   assert.equal(matchesMetric(projects[3], 'active', today), false);
   assert.equal(matchesMetric(projects[4], 'due', today), false);
+});
+
+test('a due or approval filter keeps the empty-register and search prompts', () => {
+  const empty = { open: false, projectCount: 0, registerIsEmpty: true, searching: false };
+  assert.equal(overviewNotice(null, empty), 'sample');
+  assert.equal(overviewNotice('due', empty), 'sample');
+  assert.equal(overviewNotice('approval', empty), 'sample');
+  assert.equal(overviewNotice('due', { ...empty, searching: true }), 'search');
+  assert.equal(overviewNotice('approval', { open: false, projectCount: 0, registerIsEmpty: false, searching: true }), 'search');
+  assert.equal(overviewNotice('due', { open: false, projectCount: 4, registerIsEmpty: false, searching: false }), 'filter');
+  assert.equal(overviewNotice('active', { open: false, projectCount: 4, registerIsEmpty: false, searching: false }), 'idle');
+  assert.equal(overviewNotice('due', { open: true, projectCount: 4, registerIsEmpty: false, searching: false }), null);
 });

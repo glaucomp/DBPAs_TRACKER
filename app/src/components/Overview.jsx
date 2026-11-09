@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Activity, CalendarClock, FileStack, Hourglass } from 'lucide-react';
-import { groupOverview, matchesMetric, metrics } from '../model.js';
+import { groupOverview, matchesMetric, metrics, overviewNotice } from '../model.js';
 import { DueDate, PriorityBadge, StatusBadge } from './Badges.jsx';
 import { DataTable } from './DataTable.jsx';
 import { Button, EmptyState } from './ui.jsx';
@@ -8,11 +8,15 @@ import { Button, EmptyState } from './ui.jsx';
 export function Overview({ projects, statuses, onEdit, onSample, sampling, registerIsEmpty, searching, onOpenIssued }) {
   const [focus, setFocus] = useState(null);
   const summary = metrics(projects);
-  const narrowed = focus === 'due' || focus === 'approval';
   const listed = focus ? projects.filter((project) => matchesMetric(project, focus)) : projects;
   const { sections, unassigned } = groupOverview(listed, statuses);
   const open = sections.length > 0 || unassigned.length > 0;
-  const showSample = !open && !narrowed && registerIsEmpty && !searching;
+  const notice = overviewNotice(focus, {
+    open,
+    projectCount: projects.length,
+    registerIsEmpty,
+    searching,
+  });
 
   function chooseMetric(metric) {
     if (metric === 'issuances') {
@@ -38,7 +42,7 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
         </p>
       ) : null}
 
-      {showSample ? (
+      {notice === 'sample' ? (
         <EmptyState
           title="The register is empty"
           action={<Button onClick={onSample} disabled={sampling}>{sampling ? 'Loading sample…' : 'Load sample projects'}</Button>}
@@ -47,19 +51,19 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
         </EmptyState>
       ) : null}
 
-      {!open && !narrowed && projects.length === 0 && !showSample ? (
+      {notice === 'search' ? (
         <EmptyState title="No projects match that search">
           Try a project number, address, strata plan, or engineer.
         </EmptyState>
       ) : null}
 
-      {!open && !narrowed && projects.length > 0 ? (
+      {notice === 'idle' ? (
         <EmptyState title="Nothing is open on the overview">
           Completed jobs stay in Projects{summary.issuedOnly ? ', and projects recorded only as issuances stay under Issued DBPAs' : ''}.
         </EmptyState>
       ) : null}
 
-      {!open && narrowed && projects.length > 0 ? (
+      {notice === 'filter' ? (
         <EmptyState title={focus === 'due' ? 'Nothing is due this month' : 'Nothing is waiting for approval'}>
           {focus === 'due'
             ? 'Jobs due this month, including anything overdue, show up here.'

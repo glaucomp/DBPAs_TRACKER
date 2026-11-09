@@ -53,6 +53,14 @@ export function matchesMetric(project, metric, today = todayISO()) {
   return false;
 }
 
+export function overviewNotice(focus, { open, projectCount, registerIsEmpty, searching }) {
+  if (open) return null;
+  if (registerIsEmpty && !searching) return 'sample';
+  if (projectCount === 0) return 'search';
+  if (focus === 'due' || focus === 'approval') return 'filter';
+  return 'idle';
+}
+
 export function statusRank(status) {
   const rank = STATUS_RANK.get((status || '').trim().toLowerCase());
   return rank === undefined ? STATUS_RANK.size : rank;
