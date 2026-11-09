@@ -113,12 +113,22 @@ test('metric filters select the same jobs the cards count', () => {
 });
 
 test('status chart follows working order and counts open jobs only', () => {
-  assert.deepEqual(statusChart(projects, statuses), [
-    { label: 'In Progress', count: 1 },
-    { label: 'For Update / Revision', count: 1 },
-    { label: 'New Job', count: 1 },
-    { label: UNCONFIGURED_STATUS, count: 1 },
+  assert.deepEqual(statusChart(projects, statuses, '2026-11-09'), [
+    { label: 'In Progress', count: 1, overdue: 0 },
+    { label: 'For Update / Revision', count: 1, overdue: 0 },
+    { label: 'New Job', count: 1, overdue: 0 },
+    { label: UNCONFIGURED_STATUS, count: 1, overdue: 0 },
   ]);
+  assert.deepEqual(statusChart(projects, statuses, '2026-11-13').map((bar) => [bar.label, bar.overdue]), [
+    ['In Progress', 0],
+    ['For Update / Revision', 1],
+    ['New Job', 0],
+    [UNCONFIGURED_STATUS, 1],
+  ]);
+  const approved = { ...projects[1], id: 9, number: 'DEMO-109', status: 'Approved', due: '2026-10-01', issuedOnly: false };
+  const withApproved = statusChart([...projects, approved], statuses, '2026-11-13');
+  assert.equal(withApproved.find((bar) => bar.label === 'Approved').count, 1);
+  assert.equal(withApproved.find((bar) => bar.label === 'Approved').overdue, 0);
   assert.equal(matchesStatusFocus(projects[1], 'In Progress', statuses), true);
   assert.equal(matchesStatusFocus(projects[0], 'In Progress', statuses), false);
   assert.equal(matchesStatusFocus(projects[5], UNCONFIGURED_STATUS, statuses), true);
