@@ -14,7 +14,7 @@ export function Overview({ projects, statuses, onEdit, onSample, sampling, regis
     <div className="grid gap-6">
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Metric icon={Activity} label="Open jobs" value={summary.active} detail="Excludes completed work" />
-        <Metric icon={CalendarClock} label="Due within 7 days" value={summary.due} detail="Includes anything overdue" />
+        <Metric icon={CalendarClock} label="Due this month" value={summary.due} detail="Includes anything overdue" />
         <Metric icon={Hourglass} label="Waiting for approval" value={summary.approval} detail="Held for a decision" />
         <Metric icon={FileStack} label="Issuances on file" value={summary.issuances} detail="Across every project" />
       </section>
