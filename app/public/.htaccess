@@ -1,5 +1,12 @@
 RewriteEngine On
 
+# The homepage must not stick in the browser. The old blank page was cached.
+<IfModule mod_headers.c>
+  <Files "index.html">
+    Header set Cache-Control "no-store"
+  </Files>
+</IfModule>
+
 # The API is a real folder. Leave it alone.
 RewriteRule ^api/ - [L]
 
