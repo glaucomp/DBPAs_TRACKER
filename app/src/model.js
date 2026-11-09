@@ -131,11 +131,22 @@ export function groupOverview(projects, statusOptions) {
 }
 
 export function statusChart(projects, statusOptions) {
-  const { sections, unassigned } = groupOverview(projects, statusOptions);
-  const bars = sections.map(([label, rows]) => ({ label, count: rows.length }));
-  if (unassigned.length > 0) {
-    bars.push({ label: UNCONFIGURED_STATUS, count: unassigned.length });
+  const labels = statusOptions.map((option) => option.label);
+  const counts = new Map(labels.map((label) => [label, 0]));
+  let unassigned = 0;
+
+  for (const project of projects) {
+    if (project.issuedOnly || isCompleted(project.status)) continue;
+    if (counts.has(project.status)) counts.set(project.status, counts.get(project.status) + 1);
+    else unassigned += 1;
   }
+
+  const bars = [...counts.entries()]
+    .filter(([, count]) => count > 0)
+    .sort(([left], [right]) => statusRank(left) - statusRank(right) || labels.indexOf(left) - labels.indexOf(right))
+    .map(([label, count]) => ({ label, count }));
+
+  if (unassigned > 0) bars.push({ label: UNCONFIGURED_STATUS, count: unassigned });
   return bars;
 }
 
